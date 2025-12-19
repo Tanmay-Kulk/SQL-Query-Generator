@@ -1,10 +1,61 @@
 import gradio as gr
 import os
-from openai import OpenAI
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Lazy import to avoid proxy issues
+def generate_sql(user_question):
+    from openai import OpenAI
+    
+    try:
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        SAMPLE_SCHEMA = """
+Table: customers
+- customer_id (INT)
+- customer_name (VARCHAR)
+- email (VARCHAR)
+- signup_date (DATE)
 
-# Sample schema
+Table: orders
+- order_id (INT)
+- customer_id (INT)
+- order_date (DATE)
+- total_amount (DECIMAL)
+- status (VARCHAR)
+
+Table: products
+- product_id (INT)
+- product_name (VARCHAR)
+- category (VARCHAR)
+- price (DECIMAL)
+"""
+        
+        prompt = f"""Given this database schema:
+
+{SAMPLE_SCHEMA}
+
+Convert this question to SQL query:
+"{user_question}"
+
+Rules:
+- Return ONLY the SQL query, no explanations
+- Use proper SQL syntax
+- Be specific and accurate
+"""
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
+        
+        sql_query = response.choices[0].message.content.strip()
+        sql_query = sql_query.replace("```sql", "").replace("```", "").strip()
+        
+        return sql_query
+    
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 SAMPLE_SCHEMA = """
 Table: customers
 - customer_id (INT)
@@ -25,35 +76,6 @@ Table: products
 - category (VARCHAR)
 - price (DECIMAL)
 """
-
-def generate_sql(user_question):
-    try:
-        prompt = f"""Given this database schema:
-
-{SAMPLE_SCHEMA}
-
-Convert this question to SQL query:
-"{user_question}"
-
-Rules:
-- Return ONLY the SQL query, no explanations
-- Use proper SQL syntax
-- Be specific and accurate
-"""
-        
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0
-        )
-        
-        sql_query = response.choices[0].message.content.strip()
-        sql_query = sql_query.replace("```sql", "").replace("```", "").strip()
-        
-        return sql_query
-    
-    except Exception as e:
-        return f"Error: {str(e)}"
 
 # Example questions
 examples = [
@@ -100,5 +122,5 @@ with gr.Blocks(title="SQL Query Generator") as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch(share=True)
-    
+    demo.launch()
+

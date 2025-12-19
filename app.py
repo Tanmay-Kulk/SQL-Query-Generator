@@ -1,86 +1,41 @@
 import gradio as gr
 import os
-import sqlite3
 from openai import OpenAI
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Initialize in-memory database with sample data
-def get_db_connection():
-    """Create a new connection for each request"""
-    conn = sqlite3.connect(':memory:')
-    cursor = conn.cursor()
-    
-    # Create tables
-    cursor.execute("""
-        CREATE TABLE customers (
-            customer_id INTEGER PRIMARY KEY,
-            customer_name TEXT,
-            email TEXT,
-            signup_date DATE
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE orders (
-            order_id INTEGER PRIMARY KEY,
-            customer_id INTEGER,
-            order_date DATE,
-            total_amount DECIMAL,
-            status TEXT
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE products (
-            product_id INTEGER PRIMARY KEY,
-            product_name TEXT,
-            category TEXT,
-            price DECIMAL
-        )
-    """)
-    
-    # Insert sample data - customers
-    customers = [
-        (1, 'John Smith', 'john@email.com', '2024-01-15'),
-        (2, 'Sarah Johnson', 'sarah@email.com', '2024-02-20'),
-        (3, 'Mike Brown', 'mike@email.com', '2023-11-10'),
-        (4, 'Emily Davis', 'emily@email.com', '2024-03-05'),
-        (5, 'David Wilson', 'david@email.com', '2023-12-01'),
-    ]
-    cursor.executemany('INSERT INTO customers VALUES (?,?,?,?)', customers)
-    
-    # Insert sample data - products
-    products = [
-        (1, 'Laptop Pro', 'Electronics', 1299.99),
-        (2, 'Wireless Mouse', 'Electronics', 29.99),
-        (3, 'Office Chair', 'Furniture', 249.99),
-        (4, 'Desk Lamp', 'Furniture', 49.99),
-        (5, 'USB Cable', 'Electronics', 9.99),
-        (6, 'Monitor 27"', 'Electronics', 399.99),
-        (7, 'Keyboard Mechanical', 'Electronics', 89.99),
-        (8, 'Standing Desk', 'Furniture', 499.99),
-    ]
-    cursor.executemany('INSERT INTO products VALUES (?,?,?,?)', products)
-    
-    # Insert sample data - orders
-    orders = [
-        (1, 1, '2024-01-20', 1329.98, 'Completed'),
-        (2, 2, '2024-02-25', 249.99, 'Completed'),
-        (3, 1, '2024-03-10', 399.99, 'Completed'),
-        (4, 3, '2024-03-15', 559.97, 'Pending'),
-        (5, 4, '2024-03-20', 1299.99, 'Completed'),
-        (6, 2, '2024-04-01', 89.99, 'Shipped'),
-        (7, 5, '2024-04-05', 499.98, 'Completed'),
-        (8, 1, '2024-04-10', 29.99, 'Pending'),
-        (9, 3, '2024-04-12', 49.99, 'Completed'),
-        (10, 4, '2024-04-15', 1699.97, 'Shipped'),
-    ]
-    cursor.executemany('INSERT INTO orders VALUES (?,?,?,?,?)', orders)
-    
-    conn.commit()
-    return conn
+# Sample data stored as dictionaries (no database)
+CUSTOMERS = [
+    {"customer_id": 1, "customer_name": "John Smith", "email": "john@email.com", "signup_date": "2024-01-15"},
+    {"customer_id": 2, "customer_name": "Sarah Johnson", "email": "sarah@email.com", "signup_date": "2024-02-20"},
+    {"customer_id": 3, "customer_name": "Mike Brown", "email": "mike@email.com", "signup_date": "2023-11-10"},
+    {"customer_id": 4, "customer_name": "Emily Davis", "email": "emily@email.com", "signup_date": "2024-03-05"},
+    {"customer_id": 5, "customer_name": "David Wilson", "email": "david@email.com", "signup_date": "2023-12-01"},
+]
 
+PRODUCTS = [
+    {"product_id": 1, "product_name": "Laptop Pro", "category": "Electronics", "price": 1299.99},
+    {"product_id": 2, "product_name": "Wireless Mouse", "category": "Electronics", "price": 29.99},
+    {"product_id": 3, "product_name": "Office Chair", "category": "Furniture", "price": 249.99},
+    {"product_id": 4, "product_name": "Desk Lamp", "category": "Furniture", "price": 49.99},
+    {"product_id": 5, "product_name": "USB Cable", "category": "Electronics", "price": 9.99},
+    {"product_id": 6, "product_name": "Monitor 27\"", "category": "Electronics", "price": 399.99},
+    {"product_id": 7, "product_name": "Keyboard Mechanical", "category": "Electronics", "price": 89.99},
+    {"product_id": 8, "product_name": "Standing Desk", "category": "Furniture", "price": 499.99},
+]
+
+ORDERS = [
+    {"order_id": 1, "customer_id": 1, "order_date": "2024-01-20", "total_amount": 1329.98, "status": "Completed"},
+    {"order_id": 2, "customer_id": 2, "order_date": "2024-02-25", "total_amount": 249.99, "status": "Completed"},
+    {"order_id": 3, "customer_id": 1, "order_date": "2024-03-10", "total_amount": 399.99, "status": "Completed"},
+    {"order_id": 4, "customer_id": 3, "order_date": "2024-03-15", "total_amount": 559.97, "status": "Pending"},
+    {"order_id": 5, "customer_id": 4, "order_date": "2024-03-20", "total_amount": 1299.99, "status": "Completed"},
+    {"order_id": 6, "customer_id": 2, "order_date": "2024-04-01", "total_amount": 89.99, "status": "Shipped"},
+    {"order_id": 7, "customer_id": 5, "order_date": "2024-04-05", "total_amount": 499.98, "status": "Completed"},
+    {"order_id": 8, "customer_id": 1, "order_date": "2024-04-10", "total_amount": 29.99, "status": "Pending"},
+    {"order_id": 9, "customer_id": 3, "order_date": "2024-04-12", "total_amount": 49.99, "status": "Completed"},
+    {"order_id": 10, "customer_id": 4, "order_date": "2024-04-15", "total_amount": 1699.97, "status": "Shipped"},
+]
 
 SCHEMA_INFO = """
 Table: customers (5 records)
@@ -103,9 +58,9 @@ Table: products (8 records)
 - price (DECIMAL)
 """
 
-def generate_and_execute_sql(user_question):
+def generate_sql(user_question):
+    """Generate SQL query from natural language"""
     try:
-        # Generate SQL query
         prompt = f"""Given this database schema:
 
 {SCHEMA_INFO}
@@ -129,47 +84,68 @@ Rules:
         sql_query = response.choices[0].message.content.strip()
         sql_query = sql_query.replace("```sql", "").replace("```", "").strip()
         
-        # Create fresh connection for each query
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Show sample data based on query
+        sample_results = get_sample_results(sql_query.lower())
         
-        # Execute the query
-        cursor.execute(sql_query)
-        results = cursor.fetchall()
-        columns = [description[0] for description in cursor.description]
+        return sql_query, sample_results
         
-        # Format results
-        if results:
-            result_text = "Query Results:\n\n"
-            result_text += " | ".join(columns) + "\n"
-            result_text += "-" * (len(" | ".join(columns))) + "\n"
-            for row in results:
-                result_text += " | ".join(str(val) for val in row) + "\n"
-        else:
-            result_text = "Query executed successfully. No results returned."
-        
-        conn.close()  # Clean up
-        return sql_query, result_text
-        
-    except sqlite3.Error as e:
-        return sql_query if 'sql_query' in locals() else "Error generating query", f"SQL Error: {str(e)}"
     except Exception as e:
         return f"Error: {str(e)}", ""
+
+def get_sample_results(query):
+    """Return sample data based on query keywords"""
+    
+    if "customer" in query and "order" not in query:
+        result = "Sample Results:\n\n"
+        result += "customer_id | customer_name | email | signup_date\n"
+        result += "-" * 70 + "\n"
+        for c in CUSTOMERS[:3]:
+            result += f"{c['customer_id']} | {c['customer_name']} | {c['email']} | {c['signup_date']}\n"
+        result += f"\n(Showing 3 of {len(CUSTOMERS)} customers)"
+        return result
+    
+    elif "product" in query:
+        result = "Sample Results:\n\n"
+        result += "product_id | product_name | category | price\n"
+        result += "-" * 60 + "\n"
+        for p in PRODUCTS[:4]:
+            result += f"{p['product_id']} | {p['product_name']} | {p['category']} | ${p['price']}\n"
+        result += f"\n(Showing 4 of {len(PRODUCTS)} products)"
+        return result
+    
+    elif "order" in query:
+        result = "Sample Results:\n\n"
+        result += "order_id | customer_id | order_date | total_amount | status\n"
+        result += "-" * 70 + "\n"
+        for o in ORDERS[:5]:
+            result += f"{o['order_id']} | {o['customer_id']} | {o['order_date']} | ${o['total_amount']} | {o['status']}\n"
+        result += f"\n(Showing 5 of {len(ORDERS)} orders)"
+        return result
+    
+    elif "sum" in query or "total" in query or "revenue" in query:
+        total = sum(o['total_amount'] for o in ORDERS)
+        return f"Sample Results:\n\ntotal_revenue\n---------\n${total:.2f}"
+    
+    elif "count" in query:
+        return f"Sample Results:\n\ncount\n-----\n{len(ORDERS)}"
+    
+    else:
+        return "Sample Results:\n\n(Query generated successfully. Results would appear here with actual database.)"
 
 # Example questions
 examples = [
     ["Show all customers"],
-    ["Find total revenue by customer"],
-    ["List all electronics products under $100"],
-    ["Show pending orders with customer names"],
+    ["Find total revenue"],
+    ["List all electronics products"],
+    ["Show pending orders"],
     ["What's the most expensive product?"],
     ["Count orders by status"],
 ]
 
 # Build interface
-with gr.Blocks(title="SQL Query Generator & Executor", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title="SQL Query Generator", theme=gr.themes.Soft()) as demo:
     gr.Markdown("# 🔍 Natural Language to SQL Generator")
-    gr.Markdown("Ask questions in plain English. Get SQL queries AND see real results from sample data.")
+    gr.Markdown("Ask questions in plain English and get SQL queries instantly. Sample results shown below.")
     
     with gr.Row():
         question_input = gr.Textbox(
@@ -178,7 +154,7 @@ with gr.Blocks(title="SQL Query Generator & Executor", theme=gr.themes.Soft()) a
             lines=2,
             scale=3
         )
-        generate_btn = gr.Button("Generate & Execute", variant="primary", scale=1)
+        generate_btn = gr.Button("Generate SQL", variant="primary", scale=1)
     
     with gr.Row():
         with gr.Column():
@@ -190,7 +166,7 @@ with gr.Blocks(title="SQL Query Generator & Executor", theme=gr.themes.Soft()) a
         
         with gr.Column():
             results_output = gr.Textbox(
-                label="Query Results",
+                label="Sample Results Preview",
                 lines=8,
                 max_lines=15
             )
@@ -213,7 +189,7 @@ with gr.Blocks(title="SQL Query Generator & Executor", theme=gr.themes.Soft()) a
         """)
     
     generate_btn.click(
-        fn=generate_and_execute_sql,
+        fn=generate_sql,
         inputs=question_input,
         outputs=[sql_output, results_output]
     )

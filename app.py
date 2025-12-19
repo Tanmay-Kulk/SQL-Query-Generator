@@ -22,7 +22,7 @@ def generate_sql(user_question):
         # Set the key
         openai.api_key = api_key.strip()  # Strip any whitespace
         
-        SAMPLE_SCHEMA = """
+SAMPLE_SCHEMA = """
 Table: customers
 - customer_id (INT)
 - customer_name (VARCHAR)

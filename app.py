@@ -3,7 +3,7 @@ import os
 import openai
 
 # Set API key
-openai.api_key = os.getenv(OPENAI_API_KEY)
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 SAMPLE_SCHEMA = """
 Table: customers

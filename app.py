@@ -6,8 +6,9 @@ from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Initialize in-memory database with sample data
-def init_database():
-    conn = sqlite3.connect(':memory:', check_same_thread=False)
+def get_db_connection():
+    """Create a new connection for each request"""
+    conn = sqlite3.connect(':memory:')
     cursor = conn.cursor()
     
     # Create tables
@@ -80,8 +81,6 @@ def init_database():
     conn.commit()
     return conn
 
-# Initialize database once
-db_conn = init_database()
 
 SCHEMA_INFO = """
 Table: customers (5 records)
@@ -122,7 +121,7 @@ Rules:
 """
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             temperature=0
         )
@@ -130,13 +129,16 @@ Rules:
         sql_query = response.choices[0].message.content.strip()
         sql_query = sql_query.replace("```sql", "").replace("```", "").strip()
         
+        # Create fresh connection for each query
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
         # Execute the query
-        cursor = db_conn.cursor()
         cursor.execute(sql_query)
         results = cursor.fetchall()
         columns = [description[0] for description in cursor.description]
         
-        # Format results as a table
+        # Format results
         if results:
             result_text = "Query Results:\n\n"
             result_text += " | ".join(columns) + "\n"
@@ -146,12 +148,13 @@ Rules:
         else:
             result_text = "Query executed successfully. No results returned."
         
+        conn.close()  # Clean up
         return sql_query, result_text
-    
+        
     except sqlite3.Error as e:
-        return sql_query, f"SQL Error: {str(e)}"
+        return sql_query if 'sql_query' in locals() else "Error generating query", f"SQL Error: {str(e)}"
     except Exception as e:
-        return f"Error generating query: {str(e)}", ""
+        return f"Error: {str(e)}", ""
 
 # Example questions
 examples = [

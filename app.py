@@ -253,7 +253,7 @@ Convert this question to a SQL query:
 "{user_question}"
 
 Rules:
-- Return ONLY the SQL query, no explanations
+- Return the SQL query, provide short and concise explanations
 - Use proper SQLite syntax
 - Use JOINs when querying related tables
 - Be specific and accurate

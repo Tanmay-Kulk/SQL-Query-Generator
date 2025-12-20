@@ -1,61 +1,124 @@
 import gradio as gr
 import os
+import sqlite3
 import openai
 
-# Debug: Check what the key looks like
+# Set API key with strip to avoid whitespace issues
 api_key = os.getenv("OPENAI_API_KEY")
+if api_key:
+    openai.api_key = api_key.strip()
 
-SAMPLE_SCHEMA = """
-Table: customers
+def create_sample_database():
+    """Create a new in-memory database with sample data for each request"""
+    conn = sqlite3.connect(':memory:')
+    cursor = conn.cursor()
+    
+    # Create tables
+    cursor.execute("""
+        CREATE TABLE customers (
+            customer_id INTEGER PRIMARY KEY,
+            customer_name TEXT,
+            email TEXT,
+            signup_date DATE
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE orders (
+            order_id INTEGER PRIMARY KEY,
+            customer_id INTEGER,
+            order_date DATE,
+            total_amount DECIMAL,
+            status TEXT
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE products (
+            product_id INTEGER PRIMARY KEY,
+            product_name TEXT,
+            category TEXT,
+            price DECIMAL
+        )
+    """)
+    
+    # Insert sample customers
+    customers = [
+        (1, 'John Smith', 'john@email.com', '2024-01-15'),
+        (2, 'Sarah Johnson', 'sarah@email.com', '2024-02-20'),
+        (3, 'Mike Brown', 'mike@email.com', '2023-11-10'),
+        (4, 'Emily Davis', 'emily@email.com', '2024-03-05'),
+        (5, 'David Wilson', 'david@email.com', '2023-12-01'),
+    ]
+    cursor.executemany('INSERT INTO customers VALUES (?,?,?,?)', customers)
+    
+    # Insert sample products
+    products = [
+        (1, 'Laptop Pro', 'Electronics', 1299.99),
+        (2, 'Wireless Mouse', 'Electronics', 29.99),
+        (3, 'Office Chair', 'Furniture', 249.99),
+        (4, 'Desk Lamp', 'Furniture', 49.99),
+        (5, 'USB Cable', 'Electronics', 9.99),
+        (6, 'Monitor 27"', 'Electronics', 399.99),
+        (7, 'Keyboard Mechanical', 'Electronics', 89.99),
+        (8, 'Standing Desk', 'Furniture', 499.99),
+    ]
+    cursor.executemany('INSERT INTO products VALUES (?,?,?,?)', products)
+    
+    # Insert sample orders
+    orders = [
+        (1, 1, '2024-01-20', 1329.98, 'Completed'),
+        (2, 2, '2024-02-25', 249.99, 'Completed'),
+        (3, 1, '2024-03-10', 399.99, 'Completed'),
+        (4, 3, '2024-03-15', 559.97, 'Pending'),
+        (5, 4, '2024-03-20', 1299.99, 'Completed'),
+        (6, 2, '2024-04-01', 89.99, 'Shipped'),
+        (7, 5, '2024-04-05', 499.98, 'Completed'),
+        (8, 1, '2024-04-10', 29.99, 'Pending'),
+        (9, 3, '2024-04-12', 49.99, 'Completed'),
+        (10, 4, '2024-04-15', 1699.97, 'Shipped'),
+    ]
+    cursor.executemany('INSERT INTO orders VALUES (?,?,?,?,?)', orders)
+    
+    conn.commit()
+    return conn
+
+SCHEMA_INFO = """
+Table: customers (5 records)
 - customer_id (INT)
-- customer_name (VARCHAR)
-- email (VARCHAR)
+- customer_name (TEXT)
+- email (TEXT)
 - signup_date (DATE)
 
-Table: orders
+Table: orders (10 records)
 - order_id (INT)
 - customer_id (INT)
 - order_date (DATE)
 - total_amount (DECIMAL)
-- status (VARCHAR)
+- status (TEXT: Completed, Pending, Shipped)
 
-Table: products
+Table: products (8 records)
 - product_id (INT)
-- product_name (VARCHAR)
-- category (VARCHAR)
+- product_name (TEXT)
+- category (TEXT: Electronics, Furniture)
 - price (DECIMAL)
 """
 
-def generate_sql(user_question):
+def generate_and_execute_sql(user_question):
     try:
-        # Additional debug info
-        if not api_key:
-            return "Error: API key not found in environment"
-        
-        if not api_key.startswith("sk-"):
-            return f"Error: API key doesn't start with 'sk-'. It starts with: '{api_key[:10]}...'"
-        
-        # Check for hidden characters
-        key_len = len(api_key)
-        if key_len < 20:
-            return f"Error: API key too short ({key_len} chars). Should be 48+ characters"
-        
-        # Set the key
-        openai.api_key = api_key.strip()  # Strip any whitespace
-        
-        
-        
+        # Generate SQL query
         prompt = f"""Given this database schema:
 
-{SAMPLE_SCHEMA}
+{SCHEMA_INFO}
 
-Convert this question to SQL query:
+Convert this question to a SQL query:
 "{user_question}"
 
 Rules:
 - Return ONLY the SQL query, no explanations
-- Use proper SQL syntax
+- Use proper SQLite syntax
 - Be specific and accurate
+- Use JOIN when querying multiple tables
 """
         
         response = openai.ChatCompletion.create(
@@ -68,53 +131,95 @@ Rules:
         sql_query = response.choices[0].message.content.strip()
         sql_query = sql_query.replace("```sql", "").replace("```", "").strip()
         
-        return sql_query
-    
+        # Create fresh database and execute query
+        conn = create_sample_database()
+        cursor = conn.cursor()
+        cursor.execute(sql_query)
+        results = cursor.fetchall()
+        
+        # Get column names
+        columns = [description[0] for description in cursor.description] if cursor.description else []
+        
+        # Format results
+        if results:
+            result_text = "Query Results:\n\n"
+            result_text += " | ".join(columns) + "\n"
+            result_text += "-" * (len(" | ".join(columns))) + "\n"
+            for row in results:
+                result_text += " | ".join(str(val) if val is not None else "NULL" for val in row) + "\n"
+            result_text += f"\n({len(results)} row{'s' if len(results) != 1 else ''} returned)"
+        else:
+            result_text = "Query executed successfully. No results returned."
+        
+        conn.close()
+        return sql_query, result_text
+        
+    except sqlite3.Error as e:
+        return sql_query if 'sql_query' in locals() else "Error generating query", f"SQL Error: {str(e)}"
     except Exception as e:
-        return f"Error: {str(e)}\n\nKey length: {len(api_key) if api_key else 0}\nKey starts with: {api_key[:15] if api_key else 'None'}..."
+        return f"Error: {str(e)}", ""
 
 # Example questions
 examples = [
-    ["Find all customers who signed up in 2024"],
-    ["Show total revenue by product category"],
-    ["Get top 10 customers by order count"],
-    ["List all pending orders with customer names"],
+    ["Show all customers"],
+    ["Find total revenue"],
+    ["List all electronics products under $100"],
+    ["Show pending orders with customer names"],
+    ["What's the most expensive product?"],
+    ["Count orders by status"],
+    ["Which customer spent the most money?"],
 ]
 
 # Build interface
-with gr.Blocks(title="SQL Query Generator") as demo:
+with gr.Blocks(title="SQL Query Generator & Executor", theme=gr.themes.Soft()) as demo:
     gr.Markdown("# 🔍 Natural Language to SQL Generator")
-    gr.Markdown("Ask questions about your data in plain English, get SQL queries instantly.")
+    gr.Markdown("Ask questions in plain English. Get SQL queries AND see real results from sample data.")
     
     with gr.Row():
-        with gr.Column():
-            question_input = gr.Textbox(
-                label="Your Question",
-                placeholder="e.g., Show me customers who spent more than $1000",
-                lines=3
-            )
-            generate_btn = gr.Button("Generate SQL", variant="primary")
-        
+        question_input = gr.Textbox(
+            label="Your Question",
+            placeholder="e.g., Show me customers who placed orders in 2024",
+            lines=2,
+            scale=3
+        )
+        generate_btn = gr.Button("Generate & Execute", variant="primary", scale=1)
+    
+    with gr.Row():
         with gr.Column():
             sql_output = gr.Code(
                 label="Generated SQL Query",
                 language="sql",
-                lines=10
+                lines=8
+            )
+        
+        with gr.Column():
+            results_output = gr.Textbox(
+                label="Query Results",
+                lines=8,
+                max_lines=15
             )
     
-    gr.Markdown("### Example Questions")
+    gr.Markdown("### Try These Examples")
     gr.Examples(
         examples=examples,
         inputs=question_input,
     )
     
-    gr.Markdown("### Database Schema")
-    gr.Code(SAMPLE_SCHEMA, language="sql", label="Available Tables")
+    with gr.Accordion("📊 Sample Database Schema & Data", open=False):
+        gr.Markdown(SCHEMA_INFO)
+        gr.Markdown("""
+        **Sample Data Preview:**
+        - 5 customers (John Smith, Sarah Johnson, Mike Brown, Emily Davis, David Wilson)
+        - 8 products across Electronics and Furniture categories
+        - 10 orders with various statuses (Completed, Pending, Shipped)
+        - Orders range from $29.99 to $1,699.97
+        - Data spans from Nov 2023 to Apr 2024
+        """)
     
     generate_btn.click(
-        fn=generate_sql,
+        fn=generate_and_execute_sql,
         inputs=question_input,
-        outputs=sql_output
+        outputs=[sql_output, results_output]
     )
 
 if __name__ == "__main__":

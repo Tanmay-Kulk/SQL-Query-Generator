@@ -5,24 +5,7 @@ import openai
 # Debug: Check what the key looks like
 api_key = os.getenv("OPENAI_API_KEY")
 
-def generate_sql(user_question):
-    try:
-        # Additional debug info
-        if not api_key:
-            return "Error: API key not found in environment"
-        
-        if not api_key.startswith("sk-"):
-            return f"Error: API key doesn't start with 'sk-'. It starts with: '{api_key[:10]}...'"
-        
-        # Check for hidden characters
-        key_len = len(api_key)
-        if key_len < 20:
-            return f"Error: API key too short ({key_len} chars). Should be 48+ characters"
-        
-        # Set the key
-        openai.api_key = api_key.strip()  # Strip any whitespace
-        
-        SAMPLE_SCHEMA = """
+SAMPLE_SCHEMA = """
 Table: customers
 - customer_id (INT)
 - customer_name (VARCHAR)
@@ -42,6 +25,25 @@ Table: products
 - category (VARCHAR)
 - price (DECIMAL)
 """
+
+def generate_sql(user_question):
+    try:
+        # Additional debug info
+        if not api_key:
+            return "Error: API key not found in environment"
+        
+        if not api_key.startswith("sk-"):
+            return f"Error: API key doesn't start with 'sk-'. It starts with: '{api_key[:10]}...'"
+        
+        # Check for hidden characters
+        key_len = len(api_key)
+        if key_len < 20:
+            return f"Error: API key too short ({key_len} chars). Should be 48+ characters"
+        
+        # Set the key
+        openai.api_key = api_key.strip()  # Strip any whitespace
+        
+        
         
         prompt = f"""Given this database schema:
 

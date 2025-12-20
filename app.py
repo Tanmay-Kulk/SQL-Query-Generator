@@ -318,7 +318,7 @@ examples = [
 ]
 
 # Build interface
-with gr.Blocks(title="SQL Query Generator & Executor", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(theme=gr.themes.Soft()) as demo:
     gr.Markdown("# 🔍 Natural Language to SQL Generator")
     gr.Markdown("Ask complex questions about relational data. Generates SQL with proper JOINs and executes on sample database with accurate calculations.")
     
@@ -353,7 +353,7 @@ with gr.Blocks(title="SQL Query Generator & Executor", theme=gr.themes.Soft()) a
     )
     
     with gr.Accordion("📊 Database Schema with Foreign Keys", open=False):
-        gr.Code(SCHEMA_INFO, language="text", label="Complete Schema")
+        gr.Code(SCHEMA_INFO, language="sql", label="Complete Schema")
         gr.Markdown("""
         **Sample Data Summary:**
         - 7 customers across 6 US cities

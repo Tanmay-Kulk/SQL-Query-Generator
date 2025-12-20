@@ -26,7 +26,7 @@ def create_sample_database():
     cursor.execute("""
         CREATE TABLE orders (
             order_id INTEGER PRIMARY KEY,
-            customer_id INTEGER,
+            customer_id INTEGER FOREIGN KEY,
             order_date DATE,
             total_amount DECIMAL,
             status TEXT
@@ -36,6 +36,7 @@ def create_sample_database():
     cursor.execute("""
         CREATE TABLE products (
             product_id INTEGER PRIMARY KEY,
+            order_id INTEGER FOREIGN KEY,
             product_name TEXT,
             category TEXT,
             price DECIMAL
@@ -54,29 +55,32 @@ def create_sample_database():
     
     # Insert sample products
     products = [
-        (1, 'Laptop Pro', 'Electronics', 1299.99),
-        (2, 'Wireless Mouse', 'Electronics', 29.99),
-        (3, 'Office Chair', 'Furniture', 249.99),
-        (4, 'Desk Lamp', 'Furniture', 49.99),
-        (5, 'USB Cable', 'Electronics', 9.99),
-        (6, 'Monitor 27"', 'Electronics', 399.99),
-        (7, 'Keyboard Mechanical', 'Electronics', 89.99),
-        (8, 'Standing Desk', 'Furniture', 499.99),
+        (1, 1, 'Laptop Pro', 'Electronics', 1299.99),
+        (2, 2, 'Wireless Mouse', 'Electronics', 29.99),
+        (3, 3, 'Office Chair', 'Furniture', 399.99),
+        (4, 4, 'Recliner Chairs', 'Furniture', 1499.99),
+        (5, 5, 'USB Cable', 'Electronics', 9.99),
+        (6, 6, 'Monitor 27"', 'Electronics', 559.99),
+        (7, 7, 'Keyboard Mechanical', 'Electronics', 89.99),
+        (8, 8, 'Standing Desk', 'Furniture', 499.99),
+        (9, 9, 'Desk Lamp', 'Furniture', 49.99),
+        (4, 10, 'Recliner Chairs', 'Furniture', 1499.99)
+        
     ]
-    cursor.executemany('INSERT INTO products VALUES (?,?,?,?)', products)
+    cursor.executemany('INSERT INTO products VALUES (?,?,?,?,?)', products)
     
     # Insert sample orders
     orders = [
-        (1, 1, '2024-01-20', 1329.98, 'Completed'),
+        (1, 1, '2024-01-20', 1299.99, 'Completed'),
         (2, 2, '2024-02-25', 249.99, 'Completed'),
         (3, 1, '2024-03-10', 399.99, 'Completed'),
-        (4, 3, '2024-03-15', 559.97, 'Pending'),
+        (4, 3, '2024-03-15', 559.99, 'Pending'),
         (5, 4, '2024-03-20', 1299.99, 'Completed'),
         (6, 2, '2024-04-01', 89.99, 'Shipped'),
-        (7, 5, '2024-04-05', 499.98, 'Completed'),
+        (7, 5, '2024-04-05', 499.99, 'Completed'),
         (8, 1, '2024-04-10', 29.99, 'Pending'),
         (9, 3, '2024-04-12', 49.99, 'Completed'),
-        (10, 4, '2024-04-15', 1699.97, 'Shipped'),
+        (10, 4, '2024-04-15', 1499.99, 'Shipped'),
     ]
     cursor.executemany('INSERT INTO orders VALUES (?,?,?,?,?)', orders)
     

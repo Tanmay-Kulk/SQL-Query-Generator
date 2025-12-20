@@ -26,7 +26,7 @@ def create_sample_database():
     cursor.execute("""
         CREATE TABLE orders (
             order_id INTEGER PRIMARY KEY,
-            customer_id INTEGER FOREIGN KEY,
+            customer_id INTEGER,
             order_date DATE,
             total_amount DECIMAL,
             status TEXT
@@ -36,7 +36,7 @@ def create_sample_database():
     cursor.execute("""
         CREATE TABLE products (
             product_id INTEGER PRIMARY KEY,
-            order_id INTEGER FOREIGN KEY,
+            order_id INTEGER,
             product_name TEXT,
             category TEXT,
             price DECIMAL

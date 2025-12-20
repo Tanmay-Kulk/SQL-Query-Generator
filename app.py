@@ -115,7 +115,7 @@ Convert this question to a SQL query:
 "{user_question}"
 
 Rules:
-- Return ONLY the SQL query, no explanations
+- Return the SQL query, with short and concise explanations
 - Use proper SQLite syntax
 - Be specific and accurate
 - Use JOIN when querying multiple tables

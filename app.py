@@ -3,16 +3,16 @@ import os
 import sqlite3
 import openai
 
-# Set API key with strip to avoid whitespace issues
+# Set the API key with strip to avoid whitespace issues
 api_key = os.getenv("OPENAI_API_KEY")
 if api_key:
     openai.api_key = api_key.strip()
 
 def create_sample_database():
-    """Create a properly designed database with foreign keys and realistic data"""
+    """Create a properly designed database with foreign keys and insert data"""
     conn = sqlite3.connect(':memory:')
     
-    # CRITICAL: Enable foreign key support in SQLite
+    # Enable the foreign key support in SQLite
     conn.execute("PRAGMA foreign_keys = ON")
     
     cursor = conn.cursor()
@@ -40,7 +40,7 @@ def create_sample_database():
         )
     """)
     
-    # Create orders table (child of customers)
+    # Create orders table (child of customers table)
     cursor.execute("""
         CREATE TABLE orders (
             order_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,7 +54,7 @@ def create_sample_database():
         )
     """)
     
-    # Create order_items table (junction table - many-to-many between orders and products)
+    # Create order_items table (junction table between orders and products)
     cursor.execute("""
         CREATE TABLE order_items (
             order_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +71,7 @@ def create_sample_database():
         )
     """)
     
-    # Insert sample customers
+    # Insert sample customers records
     customers = [
         ('John Smith', 'john@email.com', '2024-01-15', 'Boston', 'MA'),
         ('Sarah Johnson', 'sarah@email.com', '2024-02-20', 'New York', 'NY'),
@@ -86,7 +86,7 @@ def create_sample_database():
         customers
     )
     
-    # Insert sample products
+    # Insert sample products records
     products = [
         ('Laptop Pro 15"', 'Electronics', 1299.99, 25),
         ('Wireless Mouse', 'Electronics', 29.99, 150),
@@ -106,7 +106,7 @@ def create_sample_database():
         products
     )
     
-    # Insert orders WITHOUT total_amount (we'll calculate it)
+    # Insert orders without total_amount (we'll calculate it later using a formula)
     orders = [
         (1, '2024-01-20', 0, 'Completed'),    # John Smith
         (2, '2024-02-25', 0, 'Completed'),    # Sarah Johnson
@@ -144,7 +144,7 @@ def create_sample_database():
         
         # Order 4: Mike Brown - Standing Desk + USB Cables
         (4, 8, 1, 499.99),
-        (4, 5, 6, 9.99),     # 6 USB cables @ 9.99 each = 59.94
+        (4, 5, 6, 9.99),     # 6 USB cables at 9.99 each = 59.94
         # Total: 559.93
         
         # Order 5: Emily Davis - Laptop
@@ -171,13 +171,13 @@ def create_sample_database():
         # Order 10: Emily Davis - Laptop + Monitor + Desk Mats
         (10, 1, 1, 1299.99),
         (10, 6, 1, 399.99),
-        (10, 11, 6, 24.99),  # 6 desk mats @ 24.99 each = 149.94
+        (10, 11, 6, 24.99),  # 6 desk mats at 24.99 each = 149.94
         # Total: 1849.92
         
         # Order 11: Lisa Anderson - Webcam + Headphones + Phone Stands
         (11, 9, 1, 79.99),
         (11, 10, 1, 149.99),
-        (11, 12, 5, 19.99),  # 5 phone stands @ 19.99 each = 99.95
+        (11, 12, 5, 19.99),  # 5 phone stands at 19.99 each = 99.95
         # Total: 329.93
         
         # Order 12: Robert Taylor - Webcam
@@ -189,7 +189,7 @@ def create_sample_database():
         order_items
     )
     
-    # NOW calculate and update the correct total_amount for each order
+    # Calculating and updating the correct total_amount for each order
     cursor.execute("""
         UPDATE orders
         SET total_amount = (
@@ -220,15 +220,15 @@ Table: products (12 records)
 
 Table: orders (12 records)
 - order_id INTEGER PRIMARY KEY
-- customer_id INTEGER NOT NULL → REFERENCES customers(customer_id)
+- customer_id INTEGER NOT NULL REFERENCES customers(customer_id)
 - order_date DATE NOT NULL
 - total_amount DECIMAL(10,2) NOT NULL (calculated from order_items)
 - status TEXT NOT NULL (Pending, Shipped, Completed, Cancelled)
 
 Table: order_items (23 records - junction table)
 - order_item_id INTEGER PRIMARY KEY
-- order_id INTEGER NOT NULL → REFERENCES orders(order_id)
-- product_id INTEGER NOT NULL → REFERENCES products(product_id)
+- order_id INTEGER NOT NULL REFERENCES orders(order_id)
+- product_id INTEGER NOT NULL REFERENCES products(product_id)
 - quantity INTEGER NOT NULL
 - unit_price DECIMAL(10,2) NOT NULL
 
@@ -237,14 +237,14 @@ Relationships:
 - One order can have many order_items (1:N)
 - One product can appear in many order_items (1:N)
 - orders.total_amount = SUM(order_items.quantity × order_items.unit_price) for that order
-- orders.customer_id → customers.customer_id (CASCADE on delete/update)
-- order_items.order_id → orders.order_id (CASCADE on delete/update)
-- order_items.product_id → products.product_id (RESTRICT on delete)
+- orders.customer_id -> customers.customer_id (CASCADE on delete/update)
+- order_items.order_id -> orders.order_id (CASCADE on delete/update)
+- order_items.product_id -> products.product_id (RESTRICT on delete)
 """
 
 def generate_and_execute_sql(user_question):
     try:
-        # Generate SQL query
+        
         prompt = f"""Given this database schema with foreign keys:
 
 {SCHEMA_INFO}
@@ -258,7 +258,7 @@ Rules:
 - Use JOINs when querying related tables
 - Be specific and accurate
 - Use aggregate functions (SUM, COUNT, AVG) when appropriate
-- For questions about "which customer", "which product", join to get names not just IDs
+- For questions about "which customer", "which product", use join to get names, not just IDs
 - The total_amount in orders equals SUM(quantity * unit_price) from order_items
 """
         
@@ -272,7 +272,7 @@ Rules:
         sql_query = response.choices[0].message.content.strip()
         sql_query = sql_query.replace("```sql", "").replace("```", "").strip()
         
-        # Create fresh database and execute query
+        # Create a fresh database and execute the query
         conn = create_sample_database()
         cursor = conn.cursor()
         cursor.execute(sql_query)
@@ -303,7 +303,7 @@ Rules:
     except Exception as e:
         return f"Error: {str(e)}", ""
 
-# Example questions - now with more complex queries
+# Example questions - questions with more complex queries
 examples = [
     ["Show all customers from Boston"],
     ["Find total revenue by product category"],
@@ -317,10 +317,10 @@ examples = [
     ["Verify that order totals match the sum of their items"],
 ]
 
-# Build interface
-with gr.Blocks(theme=gr.themes.Soft()) as demo:
-    gr.Markdown("# 🔍 Natural Language to SQL Generator")
-    gr.Markdown("Ask complex questions about relational data. Generates SQL with proper JOINs and executes on sample database with accurate calculations.")
+# Building our interface
+with gr.Blocks(theme=gr.themes.Monochrome()) as demo:
+    gr.Markdown("Natural Language to SQL Generator")
+    gr.Markdown("Ask business questions about relational data. Get answers in the form of SQL queries for your questions with proper syntax.")
     
     with gr.Row():
         question_input = gr.Textbox(
@@ -346,13 +346,13 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 max_lines=20
             )
     
-    gr.Markdown("### Try These Complex Examples")
+    gr.Markdown("Try These Complex Examples!")
     gr.Examples(
         examples=examples,
         inputs=question_input,
     )
     
-    with gr.Accordion("📊 Database Schema with Foreign Keys", open=False):
+    with gr.Accordion("Database Schema with Foreign Keys", open=False):
         gr.Code(SCHEMA_INFO, language="sql", label="Complete Schema")
         gr.Markdown("""
         **Sample Data Summary:**

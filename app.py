@@ -203,7 +203,7 @@ def create_sample_database():
     return conn
 
 SCHEMA_INFO = """
-Table: customers (7 records)
+Table: customers 
 - customer_id INTEGER PRIMARY KEY
 - customer_name TEXT NOT NULL
 - email TEXT UNIQUE NOT NULL
@@ -211,21 +211,21 @@ Table: customers (7 records)
 - city TEXT
 - state TEXT
 
-Table: products (12 records)
+Table: products 
 - product_id INTEGER PRIMARY KEY
 - product_name TEXT NOT NULL
 - category TEXT NOT NULL (Electronics, Furniture)
 - price DECIMAL(10,2) NOT NULL
 - stock_quantity INTEGER
 
-Table: orders (12 records)
+Table: orders 
 - order_id INTEGER PRIMARY KEY
 - customer_id INTEGER NOT NULL REFERENCES customers(customer_id)
 - order_date DATE NOT NULL
 - total_amount DECIMAL(10,2) NOT NULL (calculated from order_items)
 - status TEXT NOT NULL (Pending, Shipped, Completed, Cancelled)
 
-Table: order_items (23 records - junction table)
+Table: order_items 
 - order_item_id INTEGER PRIMARY KEY
 - order_id INTEGER NOT NULL REFERENCES orders(order_id)
 - product_id INTEGER NOT NULL REFERENCES products(product_id)
@@ -359,7 +359,7 @@ with gr.Blocks(theme=gr.themes.Monochrome()) as demo:
         - 7 customers across 6 US cities
         - 12 products (Electronics & Furniture)
         - 12 orders with various statuses
-        - 23 order items (individual products within orders)
+        - 20 order items (individual products within orders)
         - All order totals are calculated accurately from order items
         
         **Foreign Key Relationships:**

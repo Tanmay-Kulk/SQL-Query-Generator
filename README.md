@@ -42,7 +42,7 @@ When dealing with API Keys in Hugging face environment, they must be added as a 
 **IMPORTANT:** Select "Secret" not "Variable"— secrets are encrypted and hidden in logs.
 
 # CONTACT
-If you found this repository helpful, feel to connect with me on LinkedIn and I'm happy to take suggestions and feedback that will help me grow! 😄 \
+If you found this repository helpful, feel to connect with me on LinkedIn and I'm happy to take suggestions and feedback that will help me grow! 😄 
 
 **LinkedIn:** _https://www.linkedin.com/in/tanmaykulk/_ 
 
